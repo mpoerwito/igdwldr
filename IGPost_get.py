@@ -11,7 +11,7 @@ def file_ext(isvideo):
     else:
         return ".jpg"
 
-def GetPostData(url):
+def GetPostData(url, save):
     # set User-Agent to a browser to bypass HTTP 429 response 
     headers = {}
     headers['User-Agent'] = 'Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.27 Safari/537.17'
@@ -26,8 +26,11 @@ def GetPostData(url):
         result = p.search(strcontent)
         if result:
             j = json.loads(result.group(1))
-            print ("saving json data...")
-            SaveSharedData(j)
+
+            if save:
+                print ("saving json data...")
+                SaveSharedData(j)
+
             return json.dumps(j)
         else:
             return ""
@@ -52,12 +55,12 @@ def ReadSharedData(sdata, save):
     j = json.loads(sdata)
     owner = j["entry_data"]["PostPage"][0]["graphql"]["shortcode_media"]["owner"]["username"]
     shortcode = j["entry_data"]["PostPage"][0]["graphql"]["shortcode_media"]["shortcode"]
-    print("owner: " + owner + " | scode: " + shortcode)
+    print(f"owner: {owner} | scode: {shortcode}")
 
     # media type: GraphImage / GraphVideo / GraphSidecar
     if j["entry_data"]["PostPage"][0]["graphql"]["shortcode_media"]["__typename"] == "GraphSidecar":
         edges = j["entry_data"]["PostPage"][0]["graphql"]["shortcode_media"]["edge_sidecar_to_children"]["edges"]
-        print("media count: " + str(len(edges)))
+        print(f"media count: {str(len(edges))}")
         for e in edges:
             isvideo = e["node"]["is_video"]
             shortcode = e["node"]["shortcode"]
@@ -66,10 +69,10 @@ def ReadSharedData(sdata, save):
             else:
                 mediasrc = e["node"]["display_resources"][2]["src"]
 
-            print ("\tmediasrc: " + mediasrc[:mediasrc.index("?")])
-            print ("\tsave as: " + owner + "/" + shortcode + file_ext(isvideo))
+            print (f"\tmediasrc: {mediasrc[:mediasrc.index('?')]}")
+            print (f"\tsave as: {owner}-{shortcode}{file_ext(isvideo)}")
             if save:
-                SaveMedia(mediasrc, owner, shortcode + file_ext(isvideo))
+                SaveMedia(mediasrc, owner + "-" + shortcode + file_ext(isvideo))
 
     else:
         isvideo = j["entry_data"]["PostPage"][0]["graphql"]["shortcode_media"]["is_video"]
@@ -78,23 +81,23 @@ def ReadSharedData(sdata, save):
         else:
             mediasrc = j["entry_data"]["PostPage"][0]["graphql"]["shortcode_media"]["display_resources"][2]["src"]
 
-        print ("\tmediasrc: " + mediasrc[:mediasrc.index("?")])
-        print ("\tsave as: " + owner + "/" + shortcode + file_ext(isvideo))
+        print (f"\tmediasrc: {mediasrc[:mediasrc.index('?')]}")
+        print (f"\tsave as: {owner}-{shortcode}{file_ext(isvideo)}")
         if save:
-                SaveMedia(mediasrc, owner, shortcode + file_ext(isvideo))
+                SaveMedia(mediasrc, owner + "-" + shortcode + file_ext(isvideo))
 
-def SaveMedia(mediasrc, owner, filename):
-    dirpath = os.path.join(os.getcwd(), "data", owner)
+def SaveMedia(mediasrc, filename):
+    dirpath = os.path.join(os.getcwd(), "data")
     if not os.path.exists(dirpath):
         os.makedirs(dirpath)
     
     filepath = os.path.join(dirpath, filename)
-    urlretrieve(mediasrc, filepath)    
-    print(mediasrc[:mediasrc.index("?")] + ' saved')
+    urlretrieve(mediasrc, filepath)
+    print(f"{mediasrc[:mediasrc.index('?')]} saved")
 
 def Main():
     if len(argv) > 1:
-        jsondata = GetPostData(str(argv[1]))
+        jsondata = GetPostData(str(argv[1]), False)
         ReadSharedData(jsondata, True)
     else:
         print("IG post URL is not provided")
