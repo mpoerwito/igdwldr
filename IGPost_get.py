@@ -1,6 +1,8 @@
 import os
 import re
 import json
+import time
+from datetime import datetime
 from sys import argv
 from urllib.request import Request, urlopen, urlretrieve
 
@@ -55,7 +57,7 @@ def ReadSharedData(sdata, save):
     j = json.loads(sdata)
     owner = j["entry_data"]["PostPage"][0]["graphql"]["shortcode_media"]["owner"]["username"]
     shortcode = j["entry_data"]["PostPage"][0]["graphql"]["shortcode_media"]["shortcode"]
-    print(f"owner: {owner} | scode: {shortcode}")
+    # print(f"owner: {owner} | scode: {shortcode}")
 
     # media type: GraphImage / GraphVideo / GraphSidecar
     if j["entry_data"]["PostPage"][0]["graphql"]["shortcode_media"]["__typename"] == "GraphSidecar":
@@ -73,6 +75,8 @@ def ReadSharedData(sdata, save):
             print (f"\tsave as: {owner}-{shortcode}{file_ext(isvideo)}")
             if save:
                 SaveMedia(mediasrc, owner + "-" + shortcode + file_ext(isvideo))
+
+            time.sleep(0.5)
 
     else:
         isvideo = j["entry_data"]["PostPage"][0]["graphql"]["shortcode_media"]["is_video"]
@@ -95,12 +99,23 @@ def SaveMedia(mediasrc, filename):
     urlretrieve(mediasrc, filepath)
     print(f"{mediasrc[:mediasrc.index('?')]} saved")
 
+def ReadFromFile():
+    with open(os.path.join(os.getcwd(), "data/links.txt"), 'r') as source:
+        for link in source.readlines():
+            jdata = GetPostData(link, False)
+            ReadSharedData(jdata, True)
+        
+    with open(os.path.join(os.getcwd(), "data/links.txt"), 'a') as source:
+        source.write("Completed at " + str(datetime.now()) )
+        source.close()
+
 def Main():
     if len(argv) > 1:
         jsondata = GetPostData(str(argv[1]), False)
         ReadSharedData(jsondata, True)
     else:
-        print("IG post URL is not provided")
+        print("Reading from file data/links.txt...")
+        ReadFromFile()
 
 if __name__ == "__main__": 
     Main()
