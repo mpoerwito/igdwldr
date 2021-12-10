@@ -2,6 +2,7 @@ import os
 import re
 import json
 import time
+import logging
 from datetime import datetime
 from sys import argv
 from urllib.request import Request, urlopen, urlretrieve
@@ -16,7 +17,9 @@ def file_ext(isvideo):
 def GetPostData(url, save):
     # set User-Agent to a browser to bypass HTTP 429 response 
     headers = {}
-    headers['User-Agent'] = 'Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.27 Safari/537.17'
+    #headers['User-Agent'] = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36'
+    # set user-agent to mobile browser to bypass login
+    headers['User-Agent'] = 'Mozilla/5.0 (iPhone; CPU iPhone OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1 Mobile/15E148 Safari/604.1'
     req = Request(url, headers = headers)
     response = urlopen(req)
 
@@ -40,18 +43,22 @@ def GetPostData(url, save):
         print(f"status: {response.status} |reason: {response.reason}")
 
 def SaveSharedData(jdata):
+    sdata = json.dumps(jdata)
+
     owner = jdata["entry_data"]["PostPage"][0]["graphql"]["shortcode_media"]["owner"]["username"]
     shortcode = jdata["entry_data"]["PostPage"][0]["graphql"]["shortcode_media"]["shortcode"]
 
     dirpath = os.path.join(os.getcwd(), "data", owner)
     if not os.path.exists(dirpath):
         os.makedirs(dirpath)
-    
-    sdata = json.dumps(jdata)
 
     if not os.path.isfile(dirpath + '/' + shortcode + '.json'):
         with open(dirpath + '/' + shortcode + '.json', 'w') as f: f.write(sdata)
-    print ("done.")
+
+    #debug
+    # dirpath = os.path.join(os.getcwd(), "data")
+    # with open(dirpath + '/' + 'temp.json', 'w') as f: f.write(sdata)
+    # print ("done.")
 
 def ReadSharedData(sdata, save):
     j = json.loads(sdata)
@@ -119,4 +126,3 @@ def Main():
 
 if __name__ == "__main__": 
     Main()
-
